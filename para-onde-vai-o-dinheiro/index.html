@@ -137,7 +137,7 @@ a{color:var(--s1)}
 <div class="viz-root">
 <div class="wrap">
   <h1>Para onde vai o dinheiro</h1>
-  <p class="lede" style="margin-bottom:6px;font-size:13.5px">Versão 1 · 20/11/2026 · Artigo: <a href="https://publish.obsidian.md/chicoary/artigos/para-onde-vai-o-dinheiro">jardim digital</a> · <a href="https://chicoary.wordpress.com/2026/11/20/para-onde-vai-o-dinheiro/">Crab Log</a> · críticas: responda no X a <a href="https://x.com/chicoary">@chicoary</a></p>
+  <p class="lede" style="margin-bottom:6px;font-size:13.5px">Versão 1.1 · 20/11/2026 · Artigo: <a href="https://publish.obsidian.md/chicoary/artigos/para-onde-vai-o-dinheiro">jardim digital</a> · <a href="https://chicoary.wordpress.com/2026/11/20/para-onde-vai-o-dinheiro/">Crab Log</a> · críticas: responda no X a <a href="https://x.com/chicoary">@chicoary</a></p>
   <p class="lede">Um simulador do fluxo monetário entre sociedade, Tesouro, detentores de títulos e Banco Central. Escolha uma hipótese, mude os parâmetros e acompanhe, ano a ano até 2036, o que acontece com a dívida bruta, os juros e o gasto público. Os valores estão em % do PIB, com o equivalente em reais do ano.</p>
 
   <div class="tabs" id="tabs" role="group" aria-label="Cenários"></div>
@@ -239,6 +239,51 @@ a{color:var(--s1)}
         <li><b>Sobre calote</b>, quem recebe a perda importa: no Brasil os títulos estão sobretudo com bancos, fundos de previdência e fundos de investimento, que guardam depósitos, aposentadorias e poupança de famílias.</li>
       </ul>
     </div>
+  </div>
+
+
+  <div class="card notes" style="margin-top:16px">
+    <h2>Como o simulador calcula</h2>
+    <details>
+      <summary>Ver as equações e os parâmetros (para conferir ou criticar)</summary>
+      <p class="hint" style="margin-top:10px">Todas as variáveis de fluxo estão em % do PIB. O tempo anda em anos, de 2026 (ponto de partida) a 2036. Os nomes entre parênteses são os do código desta página.</p>
+
+      <h3 style="font-size:14px;margin:14px 0 4px">1. Núcleo, igual em todos os cenários</h3>
+      <ul>
+        <li><b>Juro médio</b>: i<sub>t</sub> = 0,527 · Selic + 0,473 · (π<sub>t</sub> + 6%) + prêmio<sub>t</sub> (<code>W_SELIC</code>, <code>P.real</code>). O juro real de 6% é fixo. Em 2026 a Selic usada é 13,75%.</li>
+        <li><b>Crescimento nominal do PIB</b>: G<sub>t</sub> = (1 + g)(1 + π<sub>t</sub>).</li>
+        <li><b>Juros pagos</b>: J<sub>t</sub> = d<sub>t−1</sub> · i<sub>t</sub> / G<sub>t</sub>.</li>
+        <li><b>Receita</b>: R<sub>t</sub> = máx(5; R<sub>t−1</sub> + esforço), com esforço em pp do PIB por ano (<code>effort</code>).</li>
+        <li><b>Gasto primário</b>: S<sub>t</sub> = S<sub>t−1</sub> · (1 + gs<sub>t</sub>) / (1 + g), em que gs é o crescimento real do gasto, definido em cada cenário.</li>
+        <li><b>Primário</b>: pb<sub>t</sub> = R<sub>t</sub> − S<sub>t</sub>. Déficit a financiar: def<sub>t</sub> = J<sub>t</sub> − pb<sub>t</sub>.</li>
+        <li><b>Dívida</b>: d<sub>t</sub> = d<sub>t−1</sub> / G<sub>t</sub> + def<sub>t</sub>, ou seja, d<sub>t</sub> = d<sub>t−1</sub> · (1 + i<sub>t</sub>) / G<sub>t</sub> − pb<sub>t</sub>.</li>
+        <li><b>Meta fiscal descumprida</b>: o ano conta como descumprido se pb<sub>t</sub> &lt; meta<sub>t</sub> − 0,25 pp, com meta de 0,25% em 2026, 0,5% em 2027 e 1,0% de 2028 em diante.</li>
+      </ul>
+
+      <h3 style="font-size:14px;margin:14px 0 4px">2. O que muda em cada cenário</h3>
+      <ul>
+        <li><b>Arcabouço</b>: gs<sub>t</sub> = limitar(f · crescimento real da receita<sub>t−1</sub>; 0,6%; 2,5%), com f = 0,7, ou 0,5 se a meta do ano anterior foi descumprida. O crescimento real da receita é (R<sub>t</sub> / R<sub>t−1</sub>)(1 + g) − 1. A meta fiscal só entra por esse interruptor 70% / 50%; o modelo não corta gasto à força para atingi-la.</li>
+        <li><b>Teto de gastos</b>: gs<sub>t</sub> = 0.</li>
+        <li><b>Sem regra</b>: gs<sub>t</sub> = crescimento real escolhido no controle (<code>gsFree</code>, 3% de partida).</li>
+        <li><b>Nenhuma dívida nova</b>: S<sub>t</sub> = máx(0; R<sub>t</sub> − J<sub>t</sub>). O gasto é o que sobra da receita depois dos juros, e a dívida só é corroída pelo crescimento nominal: d<sub>t</sub> = d<sub>t−1</sub> / G<sub>t</sub>.</li>
+        <li><b>Financiar com moeda</b>: o déficit positivo é emitido em vez de virar dívida, M<sub>t</sub> = máx(0; def<sub>t</sub>), e a dívida só muda por d<sub>t−1</sub> / G<sub>t</sub> (mais o superávit, se houver). A emissão do ano anterior alimenta a inflação: π<sub>t</sub> = π<sub>base</sub> + k · M<sub>t−1</sub> / 100, limitada entre −2% e 80% (<code>k</code>, 1,0 de partida). Esse k é uma hipótese ilustrativa, e a literatura discorda do seu valor.</li>
+        <li><b>Calote parcial</b>: em 2027 a dívida cai de uma vez em perda = corte × elegível × (8,9 / 11,1) × d<sub>t−1</sub>. O fator 8,9 / 11,1 é a fatia da dívida mobiliária interna na dívida bruta do governo geral (R$ 8,9 tri sobre R$ 11,1 tri). Se a opção de poupar previdência e Tesouro Direto estiver ligada, elegível = 1 − 0,226 − 0,030; senão, elegível = 1. A partir daí o juro leva um prêmio de risco fixo (<code>premium</code>, 4 pp de partida). O gasto segue a regra do arcabouço.</li>
+      </ul>
+
+      <h3 style="font-size:14px;margin:14px 0 4px">3. Valores de partida (2026)</h3>
+      <ul>
+        <li>Dívida bruta 82,9% do PIB; receita líquida 19,15%; gasto primário 19,55%; PIB de R$ 13.646 bi (4º RARDP 2026).</li>
+        <li>Padrões dos controles: Selic média 11%, IPCA 4,7%, PIB real 1,8%, esforço de receita 0.</li>
+      </ul>
+
+      <h3 style="font-size:14px;margin:14px 0 4px">4. Limitações que pesam no resultado</h3>
+      <ul>
+        <li>O juro médio é uma média fixa: não há curva de juros, vencimentos nem troca de indexador.</li>
+        <li>A Selic é um controle, não uma resposta a inflação ou risco (laços R4 e B2). O gasto não afeta o crescimento (R3), e g é o mesmo em todos os cenários.</li>
+        <li>Receita e despesa são agregadas. O modelo não separa o gasto obrigatório do discricionário.</li>
+        <li>O juro real de 6% e os 52,7% / 47,3% de composição são fixos no código. Quem discordar de algum desses valores pode apontar qual usaria, no post do X ou por qualquer canal onde achar este simulador.</li>
+      </ul>
+    </details>
   </div>
 
   <div class="card notes" style="margin-top:16px">
